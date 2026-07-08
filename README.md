@@ -1,6 +1,6 @@
 # AI-ML-internship
 #project 1 :- data visualization
-https://internshipprojects-zwnuw9audc4vr6et8msqdp.streamlit.app/
+https://project-1-data-visualizzation-7tqiujqzdldwqputhbkn8e.streamlit.app/
 
 project 2 :- outliers
 https://f778ganefr8ptdb5erqeox.streamlit.app/
