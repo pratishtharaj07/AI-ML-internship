@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import altair as alt
 
 # -----------------------------
-# Page Configuration
+# PAGE CONFIG
 # -----------------------------
 st.set_page_config(
     page_title="Google Play Store Analysis",
@@ -13,271 +12,306 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Custom CSS
+# CUSTOM CSS
 # -----------------------------
 st.markdown("""
 <style>
-
-/* Main Background */
-.stApp {
-    background: linear-gradient(to right, #f8fbff, #eef5ff);
+.stApp{
+    background: linear-gradient(to right,#f7fbff,#eef4ff);
 }
-
-/* Main Title */
-h1 {
-    color: #1E3A8A;
-    text-align: center;
-    font-size: 42px !important;
-    font-weight: bold;
+h1{
+    color:#1E3A8A;
+    text-align:center;
 }
-
-/* Section Headers */
-h2, h3 {
-    color: #2563EB;
-    font-weight: bold;
+h2,h3{
+    color:#2563EB;
 }
-
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background-color: #1E293B;
+[data-testid="metric-container"]{
+    background:white;
+    border-radius:12px;
+    padding:15px;
+    border:1px solid #dbeafe;
 }
-
-section[data-testid="stSidebar"] * {
-    color: white;
+section[data-testid="stSidebar"]{
+    background:#1E293B;
 }
-
-/* DataFrame */
-[data-testid="stDataFrame"] {
-    border: 2px solid #2563EB;
-    border-radius: 10px;
-    overflow: hidden;
+section[data-testid="stSidebar"] *{
+    color:white;
 }
-
-/* Select Box */
-.stSelectbox > div > div {
-    border-radius: 10px;
-    border: 2px solid #2563EB;
-}
-
-/* Metric Cards */
-[data-testid="metric-container"] {
-    background-color: white;
-    border: 1px solid #dbeafe;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-}
-
-/* Success Box */
-.stAlert {
-    border-radius: 10px;
-}
-
-/* Buttons */
-.stButton>button {
-    background: linear-gradient(90deg,#2563EB,#3B82F6);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 18px;
-    font-weight: bold;
-}
-
-.stButton>button:hover {
-    background: linear-gradient(90deg,#1D4ED8,#2563EB);
-    color: white;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Title
+# TITLE
 # -----------------------------
 st.markdown("""
-<h1>📱 Google Play Store App Analysis Dashboard</h1>
-<p style="text-align:center;
-font-size:18px;
-color:gray;">
-Analyze Google Play Store apps using interactive charts and insights.
+<h1>📱 Google Play Store Analysis Dashboard</h1>
+<p style="text-align:center;color:gray;font-size:18px;">
+Interactive Dashboard using Streamlit
 </p>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Load Dataset
+# LOAD DATA
 # -----------------------------
-df = pd.read_csv("googleplaystore_v2.csv")
+@st.cache_data
+def load_data():
+    df = pd.read_csv("googleplaystore_v2.csv")
+
+    # Rating
+    df["Rating"] = pd.to_numeric(df["Rating"], errors="coerce")
+
+    # Reviews
+    df["Reviews"] = pd.to_numeric(df["Reviews"], errors="coerce")
+
+    # Price
+    df["Price"] = (
+        df["Price"]
+        .astype(str)
+        .str.replace("$","",regex=False)
+    )
+    df["Price"] = pd.to_numeric(df["Price"], errors="coerce")
+
+    # Installs
+    df["Installs"] = (
+        df["Installs"]
+        .astype(str)
+        .str.replace(",","",regex=False)
+        .str.replace("+","",regex=False)
+    )
+    df["Installs"] = pd.to_numeric(df["Installs"], errors="coerce")
+
+    # Size
+    df["Size"] = (
+        df["Size"]
+        .astype(str)
+        .str.replace("M","",regex=False)
+        .str.replace("k","",regex=False)
+        .str.replace("Varies with device","",regex=False)
+    )
+    df["Size"] = pd.to_numeric(df["Size"], errors="coerce")
+
+    return df
+
+df = load_data()
 
 # -----------------------------
-# Dataset
+# DATASET PREVIEW
 # -----------------------------
 st.header("📋 Dataset Preview")
+
 st.dataframe(df, use_container_width=True)
 
 # -----------------------------
-# Dataset Information
+# DATASET INFO
 # -----------------------------
-st.header("📑 Dataset Information")
+st.header("📊 Dataset Information")
+
+c1,c2,c3,c4 = st.columns(4)
+
+c1.metric("Rows", len(df))
+c2.metric("Columns", len(df.columns))
+c3.metric("Categories", df["Category"].nunique())
+c4.metric("Average Rating", round(df["Rating"].mean(),2))
+
+st.subheader("Column Types")
+st.dataframe(
+    df.dtypes.astype(str),
+    use_container_width=True
+)
+
+# -----------------------------
+# MISSING VALUES
+# -----------------------------
+st.header("🧹 Missing Values")
+
+missing = (
+    df.isnull()
+      .sum()
+      .reset_index()
+)
+
+missing.columns=["Column","Missing Values"]
+
+st.dataframe(
+    missing,
+    use_container_width=True
+)
+
+# -----------------------------
+# CLEANING
+# -----------------------------
+df = df.dropna(subset=["Rating"])
+
+st.success("✅ Dataset cleaned successfully.")
+
+# -----------------------------
+# SUMMARY
+# -----------------------------
+st.header("📈 Summary Statistics")
+
+st.dataframe(
+    df.describe(),
+    use_container_width=True
+)
+
+# -----------------------------
+# VISUALIZATION MENU
+# -----------------------------
+st.header("📊 Visualizations")
+
+option = st.selectbox(
+    "Choose Chart",
+    [
+        "Rating Distribution",
+        "Price Distribution",
+        "Top Categories",
+        "Content Rating",
+        "Rating vs Reviews"
+    ]
+)
+# -----------------------------
+# CHARTS
+# -----------------------------
+
+if option == "Rating Distribution":
+
+    chart = (
+        alt.Chart(df)
+        .mark_bar(color="#2563EB")
+        .encode(
+            alt.X("Rating:Q", bin=alt.Bin(maxbins=20), title="Rating"),
+            alt.Y("count()", title="Number of Apps"),
+            tooltip=["count()"]
+        )
+        .properties(height=450)
+        .interactive()
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
+elif option == "Price Distribution":
+
+    chart = (
+        alt.Chart(df)
+        .mark_bar(color="#16A34A")
+        .encode(
+            alt.X("Price:Q", bin=alt.Bin(maxbins=20), title="Price ($)"),
+            alt.Y("count()", title="Number of Apps"),
+            tooltip=["count()"]
+        )
+        .properties(height=450)
+        .interactive()
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
+elif option == "Top Categories":
+
+    top_categories = (
+        df["Category"]
+        .value_counts()
+        .head(10)
+        .reset_index()
+    )
+
+    top_categories.columns = ["Category", "Count"]
+
+    chart = (
+        alt.Chart(top_categories)
+        .mark_bar(color="#7C3AED")
+        .encode(
+            x=alt.X("Category:N", sort="-y"),
+            y="Count:Q",
+            tooltip=["Category", "Count"]
+        )
+        .properties(height=450)
+        .interactive()
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
+elif option == "Content Rating":
+
+    content = (
+        df["Content Rating"]
+        .value_counts()
+        .reset_index()
+    )
+
+    content.columns = ["Content Rating", "Count"]
+
+    chart = (
+        alt.Chart(content)
+        .mark_bar(color="#EA580C")
+        .encode(
+            x="Content Rating:N",
+            y="Count:Q",
+            tooltip=["Content Rating", "Count"]
+        )
+        .properties(height=450)
+        .interactive()
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
+elif option == "Rating vs Reviews":
+
+    scatter = df.dropna(subset=["Reviews", "Rating"])
+
+    chart = (
+        alt.Chart(scatter)
+        .mark_circle(size=60, opacity=0.7)
+        .encode(
+            x=alt.X("Reviews:Q", title="Reviews"),
+            y=alt.Y("Rating:Q", title="Rating"),
+            color=alt.Color("Rating:Q"),
+            tooltip=[
+                "App",
+                "Category",
+                "Rating",
+                "Reviews"
+            ]
+        )
+        .properties(height=500)
+        .interactive()
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
+# -----------------------------
+# DATA INSIGHTS
+# -----------------------------
+
+st.header("📌 Key Insights")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.metric("📄 Total Rows", f"{df.shape[0]:,}")
+    st.info(f"⭐ Average Rating: **{df['Rating'].mean():.2f}**")
+    st.info(f"📂 Total Categories: **{df['Category'].nunique()}**")
 
 with col2:
-    st.metric("📊 Total Columns", df.shape[1])
-
-st.subheader("Column Data Types")
-st.dataframe(df.dtypes, use_container_width=True)
+    st.info(f"📱 Total Apps: **{len(df):,}**")
+    st.info(f"👨‍💻 Total Reviews: **{int(df['Reviews'].fillna(0).sum()):,}**")
 
 # -----------------------------
-# Data Cleaning
+# FOOTER
 # -----------------------------
-st.header("🧹 Data Cleaning")
 
-st.subheader("Missing Values Before Cleaning")
-st.dataframe(df.isnull().sum(), use_container_width=True)
-
-# Remove rows with missing Rating
-df = df[df["Rating"].notnull()]
-
-# Price
-if "Price" in df.columns:
-    df["Price"] = (
-        df["Price"]
-        .astype(str)
-        .str.replace("$", "", regex=False)
-    )
-    df["Price"] = pd.to_numeric(df["Price"], errors="coerce").fillna(0)
-
-# Reviews
-if "Reviews" in df.columns:
-    df["Reviews"] = pd.to_numeric(df["Reviews"], errors="coerce")
-
-# Installs
-if "Installs" in df.columns:
-    df["Installs"] = (
-        df["Installs"]
-        .astype(str)
-        .str.replace(",", "", regex=False)
-        .str.replace("+", "", regex=False)
-    )
-    df["Installs"] = pd.to_numeric(df["Installs"], errors="coerce")
-
-# Size
-if "Size" in df.columns:
-    df["Size"] = (
-        df["Size"]
-        .astype(str)
-        .str.replace("M", "", regex=False)
-        .str.replace("k", "", regex=False)
-    )
-
-st.subheader("Missing Values After Cleaning")
-st.dataframe(df.isnull().sum(), use_container_width=True)
-
-st.success("✅ Data Cleaning Completed Successfully")
-
-# -----------------------------
-# Visualizations
-# -----------------------------
-st.header("📊 Interactive Visualizations")
-
-chart = st.selectbox(
-    "Select a Chart",
-    (
-        "Rating Distribution",
-        "Price Distribution",
-        "Content Rating",
-        "Top Categories",
-        "Rating vs Reviews"
-    )
-)
-
-with st.container(border=True):
-
-    if chart == "Rating Distribution":
-
-        fig, ax = plt.subplots(figsize=(8,5))
-        sns.histplot(
-            df["Rating"],
-            bins=20,
-            kde=True,
-            color="royalblue",
-            ax=ax
-        )
-        ax.set_title("Rating Distribution")
-        ax.set_xlabel("Rating")
-        ax.set_ylabel("Count")
-        st.pyplot(fig)
-
-    elif chart == "Price Distribution":
-
-        fig, ax = plt.subplots(figsize=(8,5))
-        sns.histplot(
-            df["Price"],
-            bins=20,
-            color="green",
-            ax=ax
-        )
-        ax.set_title("Price Distribution")
-        ax.set_xlabel("Price ($)")
-        st.pyplot(fig)
-
-    elif chart == "Content Rating":
-
-        fig, ax = plt.subplots(figsize=(8,5))
-        df["Content Rating"].value_counts().plot(
-            kind="bar",
-            color="orange",
-            ax=ax
-        )
-        ax.set_title("Content Rating")
-        ax.set_ylabel("Number of Apps")
-        st.pyplot(fig)
-
-    elif chart == "Top Categories":
-
-        fig, ax = plt.subplots(figsize=(10,5))
-        df["Category"].value_counts().head(10).plot(
-            kind="bar",
-            color="purple",
-            ax=ax
-        )
-        ax.set_title("Top 10 Categories")
-        ax.set_ylabel("Number of Apps")
-        st.pyplot(fig)
-
-    elif chart == "Rating vs Reviews":
-
-        fig, ax = plt.subplots(figsize=(8,5))
-        sns.scatterplot(
-            data=df,
-            x="Reviews",
-            y="Rating",
-            color="red",
-            ax=ax
-        )
-        ax.set_title("Rating vs Reviews")
-        st.pyplot(fig)
-
-# -----------------------------
-# Summary Statistics
-# -----------------------------
-st.header("📈 Summary Statistics")
-
-st.dataframe(df.describe(), use_container_width=True)
-
-# -----------------------------
-# Footer
-# -----------------------------
 st.markdown("---")
 
-st.markdown("""
-<div style="text-align:center;
+st.markdown(
+"""
+<div style='text-align:center;
+padding:20px;
 font-size:16px;
-color:gray;
-padding:15px;">
-❤️ Developed using <b>Streamlit</b> | Google Play Store Analysis Dashboard
+color:gray;'>
+
+❤️ Developed using <b>Streamlit</b><br>
+Google Play Store Analysis Dashboard
+
 </div>
-""", unsafe_allow_html=True)
+""",
+unsafe_allow_html=True
+)
