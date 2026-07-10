@@ -15,7 +15,7 @@ project 5:- MALE AND FEMALE image classification
 https://male-female-k4asdqmhcfqqqu363djqq4.streamlit.app/
 
 project 6:- kmeans cluster
-https://kmeans-project-6-eegpbvvyk9vmhbssvpm9dj.streamlit.app/
+https://kmeans-proj6-hnp5fvb5ckdaaaeu97u8fj.streamlit.app/
 
 project 7:- binary image classification
 https://project-7-image-classification-p9gmdxpxbxzlobtdlc3ibw.streamlit.app/
