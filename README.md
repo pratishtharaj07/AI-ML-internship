@@ -11,7 +11,7 @@ https://outliers-2-p6q37bdmhkphiuibgwcj8e.streamlit.app/
 project 4:- logistic regression 
 https://project-2-enbqvwzztzytf4oquv6wfj.streamlit.app/
 
-project 5:- image classification
+project 5:- MALE AND FEMALE image classification
 https://male-female-k4asdqmhcfqqqu363djqq4.streamlit.app/
 
 project 6:- kmeans cluster
